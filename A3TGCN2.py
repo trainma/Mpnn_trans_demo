@@ -11,7 +11,8 @@ import torch
 import torch.nn.functional as F
 from torch_geometric.nn import GCNConv
 from torch_geometric_temporal.nn.recurrent import A3TGCN2
-from Airquality_dataset import AirDatasetLoader
+from dataset.Airquality_dataset import AirDatasetLoader
+from dataset.temporal_split import temporal_signal_split_valid
 
 # GPU support
 DEVICE = torch.device('cuda')  # cuda
@@ -37,34 +38,42 @@ hours = 24
 sensor_labels = [bucket.y[sensor_number][0].item() for bucket in list(dataset)[:hours]]
 plt.plot(sensor_labels)
 plt.show()
+plt.savefig('./label.png')
 
 # Train test split
 
 from torch_geometric_temporal.signal import temporal_signal_split
 
-train_dataset, test_dataset = temporal_signal_split(dataset, train_ratio=0.8)
+train_dataset, valid_dataset, test_dataset = temporal_signal_split_valid(dataset, ratio=[0.8, 0.1, 0.1])
 
 print("Number of train buckets: ", len(set(train_dataset)))
+print("Number of Valid buckets: ", len(set(valid_dataset)))
 print("Number of test buckets: ", len(set(test_dataset)))
 
+
 # Creating Dataloaders
+def CreateDataloader(TrainDataset, ValidDataset, TestDataset):
+    def temp_dataloader(temp_dataset):
+        temp_input = np.array(temp_dataset.features)  # (27399, 207, 2, 12)
+        temp_target = np.array(temp_dataset.targets)  # (27399, 207, 12)
+        temp_x_tensor = torch.from_numpy(temp_input).type(torch.FloatTensor).to(DEVICE)  # (B, N, F, T)
+        temp_target_tensor = torch.from_numpy(temp_target).type(torch.FloatTensor).to(DEVICE)  # (B, N, T)
+        temp_dataset_new = torch.utils.data.TensorDataset(temp_x_tensor, temp_target_tensor)
+        temp_loader = torch.utils.data.DataLoader(temp_dataset_new, batch_size=batch_size, shuffle=shuffle,
+                                                  drop_last=True)
+        return temp_loader
 
-train_input = np.array(train_dataset.features)  # (27399, 207, 2, 12)
-train_target = np.array(train_dataset.targets)  # (27399, 207, 12)
-train_x_tensor = torch.from_numpy(train_input).type(torch.FloatTensor).to(DEVICE)  # (B, N, F, T)
-train_target_tensor = torch.from_numpy(train_target).type(torch.FloatTensor).to(DEVICE)  # (B, N, T)
-train_dataset_new = torch.utils.data.TensorDataset(train_x_tensor, train_target_tensor)
-train_loader = torch.utils.data.DataLoader(train_dataset_new, batch_size=batch_size, shuffle=shuffle, drop_last=True)
+    train_loader = temp_dataloader(TrainDataset)
+    valid_loader = temp_dataloader(ValidDataset)
+    test_loader = temp_dataloader(TestDataset)
+    return train_loader, valid_loader, test_loader
 
-test_input = np.array(test_dataset.features)  # (, 207, 2, 12)
-test_target = np.array(test_dataset.targets)  # (, 207, 12)
-test_x_tensor = torch.from_numpy(test_input).type(torch.FloatTensor).to(DEVICE)  # (B, N, F, T)
-test_target_tensor = torch.from_numpy(test_target).type(torch.FloatTensor).to(DEVICE)  # (B, N, T)
-test_dataset_new = torch.utils.data.TensorDataset(test_x_tensor, test_target_tensor)
-test_loader = torch.utils.data.DataLoader(test_dataset_new, batch_size=batch_size, shuffle=shuffle, drop_last=True)
+
+train_loader, valid_loader, test_loader = CreateDataloader(train_dataset,valid_dataset, test_dataset)
 
 
 # Making the model
+
 class TemporalGNN(torch.nn.Module):
     def __init__(self, node_features, periods, batch_size):
         super(TemporalGNN, self).__init__()
@@ -113,7 +122,7 @@ for snapshot in train_dataset:
 # Training the model
 model.train()
 
-for epoch in range(30):
+for epoch in range(1):
     step = 0
     loss_list = []
     for encoder_inputs, labels in train_loader:
@@ -156,7 +165,7 @@ print("Test MSE: {:.4f}".format(sum(total_loss) / len(total_loss)))
 # - Predictions shape: [num_data_points, num_sensors, num_timesteps]
 
 
-sensor = 123
+sensor = 0
 timestep = 11
 preds = np.asarray([pred[sensor][timestep].detach().cpu().numpy() for pred in y_hat])
 labs = np.asarray([label[sensor][timestep].cpu().numpy() for label in labels])
@@ -165,3 +174,4 @@ print("Data points:,", preds.shape)
 plt.figure(figsize=(20, 5))
 sns.lineplot(data=preds, label="pred")
 sns.lineplot(data=labs, label="true")
+plt.savefig('./pred.png')
