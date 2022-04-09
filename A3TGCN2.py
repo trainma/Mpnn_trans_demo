@@ -69,7 +69,7 @@ def CreateDataloader(TrainDataset, ValidDataset, TestDataset):
     return train_loader, valid_loader, test_loader
 
 
-train_loader, valid_loader, test_loader = CreateDataloader(train_dataset,valid_dataset, test_dataset)
+train_loader, valid_loader, test_loader = CreateDataloader(train_dataset, valid_dataset, test_dataset)
 
 
 # Making the model
@@ -83,13 +83,13 @@ class TemporalGNN(torch.nn.Module):
         # Equals single-shot prediction
         self.linear = torch.nn.Linear(32, periods)
 
-    def forward(self, x, edge_index):
+    def forward(self, x, edge_index, edge_weight):
         """
         x = Node features for T time steps
         edge_index = Graph edge indices
         """
         # x.shape = (batch_size,node_num,feature_size,time_steps)
-        h = self.tgnn(x, edge_index)  # x [b, 207, 2, 12]  returns h [b, 207, 12]
+        h = self.tgnn(x, edge_index, edge_weight)  # x [b, 207, 2, 12]  returns h [b, 207, 12]
         h = F.relu(h)
         h = self.linear(h)
         return h

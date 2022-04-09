@@ -8,7 +8,7 @@ import time
 import math
 import torch.nn.functional as F
 from torch.autograd import Variable
-from Tmodels.positional_encoding import *
+from Ttransformer.positional_encoding import *
 
 class AR(nn.Module):
 

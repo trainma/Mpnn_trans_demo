@@ -80,7 +80,7 @@ class MPNNLSTM(nn.Module):
 
         S = X.view(-1, self.window, self.num_nodes, self.in_channels)
         S = torch.transpose(S, 1, 2)
-        S = S.reshape(-1, self.window, self.in_channels)
+        S = S.reshape(-1, self.window, self.in_channels) #[12 11 12]
         O = [S[:, 0, :]]
 
         for l in range(1, self.window):
@@ -105,3 +105,28 @@ class MPNNLSTM(nn.Module):
 
         H = torch.cat([H_1[0, :, :], H_2[0, :, :], S], dim=1)
         return H
+
+
+class RecurrentGCN(torch.nn.Module):
+    def __init__(self, node_features, hidden_size, out_channels, num_nodes, window, dropout, c_out):
+        super(RecurrentGCN, self).__init__()
+        self.node_features = node_features
+        self.hidden_size = hidden_size
+        self.out_channels = out_channels
+        self.num_nodes = num_nodes
+        self.window = window
+        self.dropout = dropout
+        self.c_out = c_out
+        self.recurrent = MPNNLSTM(self.node_features,
+                                  self.hidden_size,
+                                  self.out_channels,
+                                  self.num_nodes,
+                                  self.window,
+                                  self.dropout)
+        self.linear = torch.nn.Linear(2 * self.out_channels + node_features, self.c_out)
+
+    def forward(self, x, edge_index, edge_weight):
+        h = self.recurrent(x, edge_index, edge_weight)
+        h = F.relu(h)
+        h = self.linear(h)
+        return h
