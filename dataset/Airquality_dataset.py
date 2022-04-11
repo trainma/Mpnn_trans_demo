@@ -3,7 +3,7 @@ import numpy as np
 import torch
 from torch_geometric.utils import dense_to_sparse
 import pandas as pd
-from utils.log import Log
+#from utils.log import Log
 
 from torch_geometric.data import Data
 from torch_geometric_temporal.nn.recurrent import MPNNLSTM
