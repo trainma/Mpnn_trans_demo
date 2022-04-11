@@ -3,7 +3,7 @@ import numpy as np
 import torch
 from torch_geometric.utils import dense_to_sparse
 import pandas as pd
-#from utils.log import Log
+# from utils.log import Log
 
 from torch_geometric.data import Data
 from torch_geometric_temporal.nn.recurrent import MPNNLSTM
@@ -14,16 +14,19 @@ import json
 from sklearn.preprocessing import StandardScaler
 from dataset.temporal_split import temporal_signal_split_valid
 
+
 class AirDatasetLoader(object):
     def __init__(self):
         super(AirDatasetLoader, self).__init__()
-        os.chdir("./data")
+        os.chdir("../data")
         self.meta_labs = {}
         self.meta_features = []
         self.meta_y = []
         self.meta_graph = None
         self.data_scaler = None
         self.meta_data = None
+        self.label_scaler = None
+        self.raw_data = None
 
     def _process_dataset(self):
         os.chdir("Airquality")
@@ -54,10 +57,15 @@ class AirDatasetLoader(object):
                 df = pd.concat((df, self.meta_labs[i]), axis=1)
 
         raw_data = df.values
-        self.data_scaler = StandardScaler().fit(raw_data)
-        normalize_data = self.data_scaler.transform(raw_data)
-        data = np.zeros((12, normalize_data.shape[0], 11))  # [nodes,features,time_stamps]
+        label_data = raw_data[:, 0::11]
 
+        self.data_scaler = StandardScaler().fit(raw_data)
+        self.label_scaler = StandardScaler().fit(label_data)
+        normalize_data = self.data_scaler.transform(raw_data)
+        normalize_label = self.label_scaler.transform(label_data)
+        data = np.zeros(
+            (12, normalize_data.shape[0], 11))  # [nodes,all_time_stamps,features] -> [nodes,features,all_time_stamps]
+        label_data = raw_data[:, 0::11]
         for i in range(data.shape[0]):
             if i == 0:
                 data[i] = normalize_data[:, :11]
@@ -66,6 +74,8 @@ class AirDatasetLoader(object):
 
         data = data.transpose(0, 2, 1)
         self.meta_data = data
+        self.meta_labs = normalize_label.transpose(1, 0)
+        self.meta_labs = np.expand_dims(self.meta_labs, 1)
 
     def _get_edges_and_weights(self):
         self.edges = self.meta_graph.edge_index.numpy()
@@ -80,15 +90,31 @@ class AirDatasetLoader(object):
         features, target = [], []
         for i, j in indices:
             features.append((self.meta_data[:, :, i: i + num_timesteps_in]))
-            target.append((self.meta_data[:, 0, i + num_timesteps_in: j]))
+            target.append((self.meta_labs[:, 0, i + num_timesteps_in: j]))
         # self.features [207(nodes) 2(feature_dim) 12(timesteps)]
         # self.target [207(nodes) 12(timesteps)]
         self.features = features
         self.targets = target
 
+    def _generate_task_clone(self, num_timesteps_in: int = 12, num_timesteps_out: int = 12):
+        self.raw_data = self.raw_data.transpose(1, 2)
+        indices = [
+            (i, i + (num_timesteps_in + num_timesteps_out))
+            for i in range(self.raw_data.shape[2] - (num_timesteps_in + num_timesteps_out) + 1)
+        ]
+        raw_features, raw_target = [], []
+        for i, j in indices:
+            raw_features.append((self.raw_data[:, :, i: i + num_timesteps_in]))
+            raw_target.append((self.raw_data[:, 0, i + num_timesteps_in: j]))
+
+        # self.features [207(nodes) 2(feature_dim) 12(timesteps)]
+        # self.target [207(nodes) 1(feature_dim) 12(timesteps)]
+        # self.features = features
+        # self.targets = target
+
     def get_dataset(
             self, num_timesteps_in: int = 12, num_timesteps_out: int = 12
-    ) -> StaticGraphTemporalSignal:
+    ):
         """Returns data iterator for Beijing_air_quality dataset as an instance of the
         static graph temporal signal class.
 
@@ -103,7 +129,8 @@ class AirDatasetLoader(object):
             self.edges, self.edge_weights, self.features, self.targets
         )
 
-        return dataset
+        return dataset, self.data_scaler, self.label_scaler
+
 
 class AirDatasetLoader2(object):
     def __init__(self):
@@ -195,7 +222,10 @@ class AirDatasetLoader2(object):
         )
 
         return dataset
+
+
 if __name__ == "__main__":
-    loader = AirDatasetLoader2()
-    dataset = loader.get_dataset(num_timesteps_in=12, num_timesteps_out=1)
-    print(dataset)
+    loader = AirDatasetLoader()
+
+    dataset, _, label_scaler = loader.get_dataset(num_timesteps_in=12, num_timesteps_out=1)
+    # print(dataset)

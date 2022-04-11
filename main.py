@@ -110,24 +110,21 @@ def train(epoch, adj_edge_index, adj_edge_attr, features, y):
     return output, loss_train
 
 
-def model_test(adj_edge_index, adj_edge_attr, features, y):
-    output = model(features, adj_edge_index, adj_edge_attr)
-    loss_test = F.mse_loss(output, y)
-    return output, loss_test
+# def model_test(adj_edge_index, adj_edge_attr, features, y):
+#     output = model(features, adj_edge_index, adj_edge_attr)
+#     loss_test = F.mse_loss(output, y)
+#     return output, loss_test
 
-def test(self, setting):
-    test_data, test_loader = self._get_data(flag='test')
 
+def test(self, test_data, test_loader):
     self.model.eval()
-
     preds = []
     trues = []
 
-    for i, (batch_x, batch_y, batch_x_mark, batch_y_mark) in enumerate(test_loader):
-        pred, true = self._process_one_batch(
-            test_data, batch_x, batch_y, batch_x_mark, batch_y_mark)
-        preds.append(pred.detach().cpu().numpy())
-        trues.append(true.detach().cpu().numpy())
+    for i, (X, y) in enumerate(test_loader):
+        y_hat = model(X, static_edge_index, static_edge_attr)
+        preds.append(y_hat.detach().cpu().numpy())
+        trues.append(y.detach().cpu().numpy())
 
     preds = np.array(preds)
     trues = np.array(trues)
@@ -151,37 +148,40 @@ def test(self, setting):
 
     return
 
-def predict(self, setting, load=False):
-    pred_data, pred_loader = self._get_data(flag='pred')
 
-    if load:
-        path = os.path.join(self.args.checkpoints, setting)
-        best_model_path = path + '/' + 'checkpoint.pth'
-        self.model.load_state_dict(torch.load(best_model_path))
+# def predict(self, setting, load=False):
+#     pred_data, pred_loader = self._get_data(flag='pred')
+#
+#     if load:
+#         path = os.path.join(self.args.checkpoints, setting)
+#         best_model_path = path + '/' + 'checkpoint.pth'
+#         self.model.load_state_dict(torch.load(best_model_path))
+#
+#     self.model.eval()
+#
+#     preds = []
+#
+#     for i, (batch_x, batch_y, batch_x_mark, batch_y_mark) in enumerate(pred_loader):
+#         pred, true = self._process_one_batch(
+#             pred_data, batch_x, batch_y, batch_x_mark, batch_y_mark)
+#         preds.append(pred.detach().cpu().numpy())
+#
+#     preds = np.array(preds)
+#     preds = preds.reshape(-1, preds.shape[-2], preds.shape[-1])
+#
+#     # result save
+#     folder_path = './results/' + setting + '/'
+#     if not os.path.exists(folder_path):
+#         os.makedirs(folder_path)
+#
+#     np.save(folder_path + 'real_prediction.npy', preds)
+#
+#     return
 
-    self.model.eval()
 
-    preds = []
-
-    for i, (batch_x, batch_y, batch_x_mark, batch_y_mark) in enumerate(pred_loader):
-        pred, true = self._process_one_batch(
-            pred_data, batch_x, batch_y, batch_x_mark, batch_y_mark)
-        preds.append(pred.detach().cpu().numpy())
-
-    preds = np.array(preds)
-    preds = preds.reshape(-1, preds.shape[-2], preds.shape[-1])
-
-    # result save
-    folder_path = './results/' + setting + '/'
-    if not os.path.exists(folder_path):
-        os.makedirs(folder_path)
-
-    np.save(folder_path + 'real_prediction.npy', preds)
-
-    return
 if __name__ == "__main__":
     loader = AirDatasetLoader()
-    dataset = loader.get_dataset(num_timesteps_in=args.window, num_timesteps_out=1)
+    dataset, _, label_scaler = loader.get_dataset(num_timesteps_in=args.window, num_timesteps_out=1)
 
     print("Dataset type:  ", dataset)
     print("Number of samples / sequences: ", len(set(dataset)))
@@ -225,6 +225,9 @@ if __name__ == "__main__":
             for batch, (X, y) in enumerate(valid_loader):
                 y_hat = model(X, static_edge_index, static_edge_attr)
                 val_loss = F.mse_loss(y_hat, y.squeeze(2))
+                real = y.detach().cpu().item().numpy()
+                pred = y_hat.detach().cpu().item().numpy()
+                pred = pred.reshape()
                 total_loss.append(val_loss.detach().cpu().item())
 
             print("Epoch {}: val MSE loss {:.4f}".format(epoch + 1, sum(total_loss) / len(train_loss)))
@@ -237,9 +240,9 @@ if __name__ == "__main__":
         print("have save best model : {}".format(best_model_path))
         model.load_state_dict(torch.load(best_model_path))
 
-        for batch, (X, y) in enumerate(test_loader):
-            y_hat = model(X, static_edge_index, static_edge_attr)
-            val_loss = F.mse_loss(y_hat, y.squeeze(2))
+        # for batch, (X, y) in enumerate(test_loader):
+        #     y_hat = model(X, static_edge_index, static_edge_attr)
+        #     val_loss = F.mse_loss(y_hat, y.squeeze(2))
 
     # # Print results
     # if (epoch % 50 == 0):
