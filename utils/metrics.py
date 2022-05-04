@@ -31,20 +31,12 @@ def MSPE(pred, true):
     return np.mean(np.square((pred - true) / true))
 
 
-def cal_metric(pred, true, method):
-    temp = 0
-    for i in range(pred.shape[1]):
-        temp += method(pred[:, i], true[:, i])
-    temp /= pred.shape[1]
-    return temp
-
-
 def metric(pred, true):
-    mae = cal_metric(pred, true, MAE)
-    mse = cal_metric(pred, true, MSE)
-    rmse = cal_metric(pred, true, RMSE)
-    mape = cal_metric(pred, true, MAPE)
-    mspe = cal_metric(pred, true, MSPE)
+    mae = MAE(pred, true)
+    mse = MSE(pred, true)
+    rmse = RMSE(pred, true)
+    mape = MAPE(pred, true)
+    mspe = MSPE(pred, true)
 
     return mae, mse, rmse, mape, mspe
 

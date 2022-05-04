@@ -1,0 +1,8 @@
+INFO---->train--->2022-05-02 20:38:30,935--->test_model Epoch 1: train MSE loss 0.6496
+INFO---->train--->2022-05-02 20:38:35,123--->Epoch 1: val_mae 98.2578 val_mse 23731.8399 val_rmse 109.2096 val_mape 1.8069 val_mspe 12.4101
+INFO---->train--->2022-05-02 20:40:02,093--->test_model Epoch 2: train MSE loss 0.3856
+INFO---->train--->2022-05-02 20:40:06,126--->Epoch 2: val_mae 70.3960 val_mse 12660.0814 val_rmse 80.4193 val_mape 1.8338 val_mspe 11.7472
+INFO---->train--->2022-05-02 20:41:34,422--->test_model Epoch 3: train MSE loss 0.3053
+INFO---->train--->2022-05-02 20:41:38,540--->Epoch 3: val_mae 53.8831 val_mse 6307.1921 val_rmse 60.3360 val_mape 1.7345 val_mspe 9.7830
+INFO---->train--->2022-05-02 20:43:13,345--->test_model Epoch 4: train MSE loss 0.2684
+INFO---->train--->2022-05-02 20:43:17,432--->Epoch 4: val_mae 42.5182 val_mse 3401.2145 val_rmse 46.7470 val_mape 1.5508 val_mspe 8.0160

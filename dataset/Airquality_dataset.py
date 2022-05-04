@@ -50,8 +50,8 @@ class AirDatasetLoader(object):
         edge_index = torch.from_numpy(edge_index)
         self.meta_graph = Data(edge_index=edge_index.t().contiguous(), edge_attr=edge_attr)
 
-        edge_index = pd.read_csv('./poi_graph.csv', header=None).iloc[:, [0, 1]].values
-        edge_attr = pd.read_csv('./poi_graph.csv', header=None).iloc[:, -1].values
+        edge_index = pd.read_csv('./poi_graph.csv', header=0).iloc[:, [0, 1]].values
+        edge_attr = pd.read_csv('./poi_graph.csv', header=0).iloc[:, -1].values
         edge_attr = torch.from_numpy(edge_attr)
         edge_index = torch.from_numpy(edge_index)
         self.poi_graph = Data(edge_index=edge_index.t().contiguous(), edge_attr=edge_attr)
@@ -97,12 +97,6 @@ class AirDatasetLoader(object):
     def _get_edges_and_weights(self):
         self.edges = self.meta_graph.edge_index.numpy()
         self.edge_weights = self.meta_graph.edge_attr.numpy()
-
-        self.poi_graph_edges=self.poi_graph.edge_index.numpy()
-        self.poi_graph_edge_weights=self.poi_graph.edge_weights.numpy()
-
-        self.ST_graph_edges = self.ST_graph.edge_index.numpy()
-        self.ST_graph_edge_weights = self.ST_graph.edge_weights.numpy()
 
     def _generate_task(self, num_timesteps_in: int = 12, num_timesteps_out: int = 12):
 
@@ -153,7 +147,7 @@ class AirDatasetLoader(object):
         )
 
         return dataset, self.data_scaler, self.label_scaler,\
-               self.poi_graph_edges,self.poi_graph_edge_weights,self.ST_graph_edges,self.ST_graph_edge_weights
+               self.poi_graph,self.ST_graph
 
 
 class AirDatasetLoader2(object):

@@ -1,0 +1,3 @@
+INFO---->train--->2022-05-04 14:02:16,568--->test_model Epoch 1: train MSE loss 0.4219
+INFO---->train--->2022-05-04 14:02:22,196--->Epoch 1: val MSE loss 0.1117
+INFO---->train--->2022-05-04 14:02:22,196--->Epoch 1: val_mae 19.5067 val_mse 781.9489 val_rmse 24.4473 val_mape 1.0319 val_mspe 136.4729

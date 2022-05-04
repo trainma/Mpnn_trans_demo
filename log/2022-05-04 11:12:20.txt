@@ -1,0 +1,1 @@
+INFO---->train--->2022-05-04 11:14:16,569--->test_model Epoch 1: train MSE loss 0.1843

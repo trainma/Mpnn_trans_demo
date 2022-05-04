@@ -1,0 +1,12 @@
+INFO---->train--->2022-05-02 16:45:23,451--->Epoch 1: train MSE loss 0.6127
+INFO---->train--->2022-05-02 16:45:24,682--->Epoch 1: val_mae 31.7455 val_mse 2788.2676 val_rmse 39.3692 val_mape 0.7602 val_mspe 1.8981
+INFO---->train--->2022-05-02 16:45:53,570--->Epoch 2: train MSE loss 0.3637
+INFO---->train--->2022-05-02 16:45:54,813--->Epoch 2: val_mae 26.5539 val_mse 1304.0548 val_rmse 31.7322 val_mape 0.9481 val_mspe 3.1937
+INFO---->train--->2022-05-02 16:46:26,529--->Epoch 3: train MSE loss 0.2966
+INFO---->train--->2022-05-02 16:46:27,958--->Epoch 3: val_mae 30.9762 val_mse 1386.0875 val_rmse 35.4521 val_mape 1.2092 val_mspe 4.8735
+INFO---->train--->2022-05-02 16:46:57,331--->Epoch 4: train MSE loss 0.2660
+INFO---->train--->2022-05-02 16:46:58,620--->Epoch 4: val_mae 35.2503 val_mse 1725.1288 val_rmse 39.7076 val_mape 1.3783 val_mspe 6.2723
+INFO---->train--->2022-05-02 16:47:29,354--->Epoch 5: train MSE loss 0.2443
+INFO---->train--->2022-05-02 16:47:30,937--->Epoch 5: val_mae 36.1726 val_mse 1851.0330 val_rmse 40.8742 val_mape 1.3324 val_mspe 5.8507
+INFO---->train--->2022-05-02 16:48:03,410--->Epoch 6: train MSE loss 0.2205
+INFO---->train--->2022-05-02 16:48:04,748--->Epoch 6: val_mae 33.3930 val_mse 1644.5730 val_rmse 38.1341 val_mape 1.2033 val_mspe 5.0309

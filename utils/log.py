@@ -6,7 +6,6 @@ class Log():
         self.log = logging.getLogger(name=name)
         self.log.setLevel(level)
         self.file_path = file_path
-
     def console_handle(self, level="DEBUG"):
         console_handler = logging.StreamHandler()
         console_handler.setLevel(level)
@@ -24,10 +23,8 @@ class Log():
         file_fmt = logging.Formatter(fmt="%(levelname)s---->%(name)s--->%(asctime)s--->%(message)s")
         return console_fmt, file_fmt
 
-    def get_log(self, console_handler=False):
-        if console_handler:
-            self.log.addHandler(self.console_handle())
-
+    def get_log(self):
+        self.log.addHandler(self.console_handle())
         self.log.addHandler(self.file_handle())
 
         return self.log

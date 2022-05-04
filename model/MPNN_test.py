@@ -1,9 +1,3 @@
-from . import mpnn_lstm
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-from torch_geometric.nn import GCNConv
-
 from model.Ttransformer.positional_encoding import *
 
 
@@ -57,7 +51,7 @@ class test_model(nn.Module):
         self.decoder_layer = nn.TransformerDecoderLayer(d_model=feature_size, nhead=8, dropout=dropout)
         self.transformer_decoder = nn.TransformerDecoder(self.decoder_layer, num_layers=dec_seq_len)
 
-        self.tmp_out = nn.Linear(9216, 256)
+        self.tmp_out = nn.Linear(256, 1)
         self.src_key_padding_mask = None
         self.transformer = nn.Transformer(d_model=self.d_model,
                                           nhead=8,
@@ -112,10 +106,15 @@ class test_model(nn.Module):
                              tgt=tgt,
                              tgt_mask=mask)
         # X = X.view(-1, self.batch_size, 256)
-        X = torch.transpose(X, 0, 1).contiguous().view(self.batch_size, -1)
+        # X = torch.transpose(X, 0, 1).contiguous().view(self.batch_size, -1)
+        X = X.view(3, self.batch_size, self.num_nodes, -1)
+        X = X.transpose(0, 1)
+
+        # X[seqlen bz features]
         transformer_out = self.tmp_out(X)
-        transformer_out = self.relu(transformer_out)
-        transformer_out = self.tmp_out2(transformer_out)
+        transformer_out = transformer_out[:, -1, :, :]
+        # transformer_out = self.relu(transformer_out)
+        # transformer_out = self.tmp_out2(transformer_out)
         return transformer_out
 
 
@@ -215,7 +214,7 @@ class test_model2(nn.Module):
         # torch.Size([168, 16, 256])->torch.Size([168, 16, pos_encoder.featuresize(256)])
         src = self.pos_encoder(src)  # torch.Size([168,16,64 ])
         tgt = self.pos_encoder(tgt)  # torch,Size(3 16 64)
-        X = self.transformer_encoder(src=src,mask=mask)
+        X = self.transformer_encoder(src=src, mask=mask)
         X = self.transformer(src=src,
                              tgt=tgt,
                              tgt_mask=mask)
@@ -228,16 +227,10 @@ class test_model2(nn.Module):
         return transformer_out
 
 
-import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
-
 import torch
 import torch.nn.functional as F
 from torch_geometric.nn import GCNConv
 from torch_geometric_temporal.nn.recurrent import A3TGCN2
-from dataset.Airquality_dataset import AirDatasetLoader
-from dataset.temporal_split import temporal_signal_split_valid
 
 
 class TemporalGNN(torch.nn.Module):

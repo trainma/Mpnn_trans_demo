@@ -2,8 +2,9 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$USER_HOME$/Downloads/Informer2020/.idea/Informer2020.iml" filepath="$USER_HOME$/Downloads/Informer2020/.idea/Informer2020.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/Mpnn_trans_demo.iml" filepath="$PROJECT_DIR$/.idea/Mpnn_trans_demo.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../timeTrans/.idea/multivariate-prediction-master.iml" filepath="$PROJECT_DIR$/../timeTrans/.idea/multivariate-prediction-master.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../../pandemic_tgnn/.idea/pandemic_tgnn.iml" filepath="$PROJECT_DIR$/../../pandemic_tgnn/.idea/pandemic_tgnn.iml" />
     </modules>
   </component>
 </project>

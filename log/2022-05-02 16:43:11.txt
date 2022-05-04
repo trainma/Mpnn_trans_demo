@@ -1,0 +1,1 @@
+INFO---->train--->2022-05-02 16:43:44,553--->Epoch 1: train MSE loss 0.6196
