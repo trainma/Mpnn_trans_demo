@@ -8,13 +8,8 @@ def adjust_learning_rate(optimizer, epoch, args):
         lr_adjust = {epoch: args.learning_rate * (0.5 ** ((epoch - 1) // 1))}
     elif args.lradj == 'type2':
         lr_adjust = {
-<<<<<<< HEAD
             10: 5e-5, 15: 3e-5, 30: 1e-6, 50: 8e-7,
             60: 5e-7, 80: 3e-7, 100: 5e-8
-=======
-            5: 5e-5, 10: 1e-5, 20: 5e-6, 30: 1e-6,
-            40: 5e-7, 50: 1e-7, 70: 5e-8, 80: 8e-9
->>>>>>> parent of daf9889... 5/2
         }
     elif args.lradj == 'type3':
         lr_adjust = {
