@@ -20,7 +20,7 @@ from dataset.temporal_split import temporal_signal_split_valid
 class AirDatasetLoader(object):
     def __init__(self):
         super(AirDatasetLoader, self).__init__()
-        os.chdir("./data")
+        os.chdir("/home/Tabe/Documents/Pro/Mpnn_trans_demo/data")
         self.meta_labs = {}
         self.meta_features = []
         self.meta_y = []

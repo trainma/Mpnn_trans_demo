@@ -4,7 +4,6 @@
     <content url="file://$MODULE_DIR$" />
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="module" module-name="multivariate-prediction-master" />
     <orderEntry type="module" module-name="pandemic_tgnn" />
   </component>
   <component name="PyDocumentationSettings">

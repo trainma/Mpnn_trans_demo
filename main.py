@@ -17,6 +17,7 @@ from utils.log import Log
 from utils.metrics import metric
 from utils.tools import EarlyStopping
 from utils.tools import adjust_learning_rate
+from Exp import Exp
 
 #
 now = datetime.datetime.now()
@@ -45,6 +46,7 @@ parser.add_argument('--num_nodes', type=int, default=12, help='the num node of g
 parser.add_argument('--node_features', type=int, default=9, help='the features of every node in graph')
 parser.add_argument('--checkpoints', type=str, default='./res/', help='location of model checkpoints')
 parser.add_argument('--lradj', type=str, default='type3', help='adjust learning rate')
+parser.add_argument('--model', type=str, default='MPNN_trans',help='choose what model to train')
 
 args = parser.parse_args()
 device = torch.device("cuda" if torch.cuda.is_available() else torch.device("cpu"))
