@@ -58,13 +58,14 @@ def CreateDataloader(TrainDataset, ValidDataset, TestDataset):
 # Making the model
 
 class TemporalGNN(torch.nn.Module):
-    def __init__(self, node_features, periods, batch_size):
+    def __init__(self, node_features, periods, batch_size, out_channels
+                 ):
         super(TemporalGNN, self).__init__()
         # Attention Temporal Graph Convolutional Cell
-        self.tgnn = A3TGCN2(in_channels=node_features, out_channels=32, periods=periods,
+        self.tgnn = A3TGCN2(in_channels=node_features, out_channels=out_channels, periods=periods,
                             batch_size=batch_size)  # node_features=2, periods=12
         # Equals single-shot prediction
-        self.linear = torch.nn.Linear(32, periods)
+        self.linear = torch.nn.Linear(out_channels, periods)
 
     def forward(self, x, edge_index, edge_weight):
         """
@@ -78,7 +79,6 @@ class TemporalGNN(torch.nn.Module):
         return h
 
 
-TemporalGNN(node_features=11, periods=12, batch_size=64)
 if __name__ == "__main__":
     loader = AirDatasetLoader()
     dataset = loader.get_dataset(num_timesteps_in=12, num_timesteps_out=8)[0]
@@ -110,7 +110,7 @@ if __name__ == "__main__":
     # Loading the graph once because it's a static graph
 
     for snapshot in train_dataset:
-        static_edge_index = snapshot.edge_index.to(DEVICE)
+        stMPNN_transatic_edge_index = snapshot.edge_index.to(DEVICE)
         static_edge_attr = snapshot.edge_attr.to(DEVICE)
         break;
 
@@ -144,7 +144,7 @@ if __name__ == "__main__":
     total_loss = []
     for encoder_inputs, labels in test_loader:
         # Get model predictions
-        y_hat = model(encoder_inputs, static_edge_index,static_edge_attr)
+        y_hat = model(encoder_inputs, static_edge_index, static_edge_attr)
         # Mean squared error
         loss = loss_fn(y_hat, labels)
         total_loss.append(loss.item())

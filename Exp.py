@@ -55,6 +55,17 @@ def train3(epoch, adj_edge_index, adj_edge_attr, poi_edge_index, poi_edge_attr, 
     return output, loss_train
 
 
+def train_A3TGCN(epoch, adj_edge_index, adj_edge_attr, features,
+                 y, optimizer: optim, model, loss_fn):
+    optimizer.zero_grad()
+    output = model(features, adj_edge_index, adj_edge_attr)
+
+    loss_train = loss_fn(output, y)
+    loss_train.backward(retain_graph=True)
+    optimizer.step()
+    return output, loss_train
+
+
 class Exp():
     def __init__(self, args, device, label_scaler, train_loader, valid_loader, test_loader,
                  poi_graph_edge_index=None, poi_graph_edge_attr=None,
@@ -77,17 +88,20 @@ class Exp():
     def _build_model(self):
         if self.args.model == "MPNN_trans":
             self.model = Multi_graph_trans(in_channels=self.args.node_features, hidden_size=self.args.hidden,
-                                           out_channels=32,pred_len=self.args.pred_len,
+                                           out_channels=32, pred_len=self.args.pred_len,
                                            d_model=self.args.d_model,
                                            feature_dim=9, label_len=self.args.label_len,
                                            num_nodes=12, window=self.args.window, dropout=self.args.dropout,
                                            num_layers=self.args.num_layers,
                                            dec_seq_len=self.args.dec_layers,
                                            batch_size=self.args.batch_size).to(self.device)
-        elif self.args.model == "A3TGCN":
-            self.model = TemporalGNN(node_features=9, periods=8, batch_size=self.args.batch_size).to(self.device)
 
-        self.optimizer = optim.Adam(self.model.parameters(), lr=self.args.lr, weight_decay=1e-4)
+        elif self.args.model == "A3TGCN":
+            self.model = TemporalGNN(node_features=self.args.node_features
+                                     , periods=self.args.pred_len
+                                     , batch_size=self.args.batch_size, out_channels=self.args.hidden).to(self.device)
+
+        self.optimizer = optim.Adam(self.model.parameters(), lr=self.args.lr, weight_decay=1e-3)
         self.early_stopping = EarlyStopping(patience=7, verbose=True)
         self.path = os.path.join(self.args.checkpoints, 'run1')
         self.loss_fn = torch.nn.MSELoss()
@@ -100,11 +114,16 @@ class Exp():
         train_loss = []
         # Train for one epoch y[256 12 1]
         for batch, (X, y) in enumerate(train_loader):
-            output, loss = train2(epoch, self.geograph_edge_index, self.geograph_edge_attr,
-                                  self.poi_graph_edge_index,
-                                  self.poi_graph_edge_attr, self.ST_graph_edge_index, self.ST_graph_edge_attr, X, y,
-                                  optimizer=self.optimizer,
-                                  loss_fn=self.loss_fn, model=self.model)
+            if self.args.model == 'MPNN_trans':
+                output, loss = train2(epoch, self.geograph_edge_index, self.geograph_edge_attr,
+                                      self.poi_graph_edge_index,
+                                      self.poi_graph_edge_attr, self.ST_graph_edge_index, self.ST_graph_edge_attr, X, y,
+                                      optimizer=self.optimizer,
+                                      loss_fn=self.loss_fn, model=self.model)
+
+            if self.args.model == "A3TGCN":
+                output, loss = train_A3TGCN(epoch, self.geograph_edge_index, self.geograph_edge_attr, X, y,
+                                            optimizer=self.optimizer, loss_fn=self.loss_fn, model=self.model)
 
             train_loss.append(loss.data.item())
 
@@ -115,30 +134,54 @@ class Exp():
         # Evaluate on validation set
 
     def _valid(self, epoch, valid_loader):
+        if self.args.model == 'MPNN_trans':
+            self.model.eval()
+            total_loss = []
+            mae_l, mse_l, rmse_l, mape_l, mspe_l = [], [], [], [], []
+            for batch, (X, y) in enumerate(valid_loader):
+                y_hat = self.model(X, self.geograph_edge_index, self.geograph_edge_attr, self.poi_graph_edge_index,
+                                   self.poi_graph_edge_attr,
+                                   self.ST_graph_edge_index, self.ST_graph_edge_attr)
+                val_loss = self.loss_fn(y_hat.squeeze(-1), y.transpose(1, 2))
 
-        self.model.eval()
-        total_loss = []
-        mae_l, mse_l, rmse_l, mape_l, mspe_l = [], [], [], [], []
-        for batch, (X, y) in enumerate(valid_loader):
-            y_hat = self.model(X, self.geograph_edge_index, self.geograph_edge_attr, self.poi_graph_edge_index,
-                               self.poi_graph_edge_attr,
-                               self.ST_graph_edge_index, self.ST_graph_edge_attr)
-            val_loss = self.loss_fn(y_hat.squeeze(-1), y.transpose(1, 2))
+                real = y.detach().cpu().numpy()
+                # real = real.transpose(0, 2, 1)
+                # real_data = label_scaler.inverse_transform(real.squeeze(2))
+                real_data = self.label_scaler.inverse_transform(real.reshape(-1, 12))
+                pred = y_hat.squeeze(-1).detach().cpu().numpy()
+                # pred = np.expand_dims(pred, 1)
+                pred_data = self.label_scaler.inverse_transform(pred.reshape(-1, 12))
+                val_mae, val_mse, val_rmse, val_mape, val_mspe = metric(pred_data, real_data)
+                mae_l.append(val_mae)
+                mse_l.append(val_mse)
+                rmse_l.append(val_rmse)
+                mape_l.append(val_mape)
+                mspe_l.append(val_mspe)
+                total_loss.append(val_loss.detach().cpu().item())
 
-            real = y.detach().cpu().numpy()
-            # real = real.transpose(0, 2, 1)
-            # real_data = label_scaler.inverse_transform(real.squeeze(2))
-            real_data = self.label_scaler.inverse_transform(real.reshape(-1, 12))
-            pred = y_hat.squeeze(-1).detach().cpu().numpy()
-            # pred = np.expand_dims(pred, 1)
-            pred_data = self.label_scaler.inverse_transform(pred.reshape(-1, 12))
-            val_mae, val_mse, val_rmse, val_mape, val_mspe = metric(pred_data, real_data)
-            mae_l.append(val_mae)
-            mse_l.append(val_mse)
-            rmse_l.append(val_rmse)
-            mape_l.append(val_mape)
-            mspe_l.append(val_mspe)
-            total_loss.append(val_loss.detach().cpu().item())
+        elif self.args.model == 'A3TGCN':
+            self.model.eval()
+            total_loss = []
+            mae_l, mse_l, rmse_l, mape_l, mspe_l = [], [], [], [], []
+            for batch, (X, y) in enumerate(valid_loader):
+                y_hat = self.output = self.model(X, self.geograph_edge_index, self.geograph_edge_attr)
+                val_loss = self.loss_fn(y_hat, y)
+
+                real = y.detach().cpu().numpy()
+                # real = real.transpose(0, 2, 1)
+                # real_data = label_scaler.inverse_transform(real.squeeze(2))
+                real_data = self.label_scaler.inverse_transform(real.transpose(0, 2, 1).reshape(-1, 12))
+                pred = y_hat.squeeze(-1).detach().cpu().numpy()
+                # pred = np.expand_dims(pred, 1)
+                pred_data = self.label_scaler.inverse_transform(pred.transpose(0, 2, 1).reshape(-1, 12))
+                val_mae, val_mse, val_rmse, val_mape, val_mspe = metric(pred_data, real_data)
+                mae_l.append(val_mae)
+                mse_l.append(val_mse)
+                rmse_l.append(val_rmse)
+                mape_l.append(val_mape)
+                mspe_l.append(val_mspe)
+                total_loss.append(val_loss.detach().cpu().item())
+
         print("Epoch {}: val MSE loss {:.4f}".format(epoch + 1, sum(total_loss) / len(total_loss)))
         logger.info("Epoch {}: val MSE loss {:.4f}".format(epoch + 1, sum(total_loss) / len(total_loss)))
         metric_val = "Epoch {}: val_mae {:.4f} val_mse {:.4f} val_rmse {:.4f} val_mape {:.4f} val_mspe {:.4f}".format(

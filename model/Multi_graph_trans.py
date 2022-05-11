@@ -1,4 +1,4 @@
-from torch_geometric.nn import GCNConv
+from torch_geometric.nn import GCNConv, SAGEConv,ChebConv
 
 from model.Ttransformer.positional_encoding import *
 
@@ -42,6 +42,43 @@ class CustomGraphConv(nn.Module):
         lst.append(X)  # X.shape[16 64 12 64]
 
         X = self.relu(self.conv2(X, edge_indeX, edge_attr))
+        X = X.permute(0, 3, 2, 1)
+        X = self.bn2(X)
+        X = X.permute(0, 3, 2, 1)
+        X = self.dropout(X)  # X.shape[16 64 12 64]
+        lst.append(X)
+        out = torch.cat(lst, dim=-1)
+
+        return X, out, skip
+
+
+class CustomSAGEConv(nn.Module):
+    def __init__(self, in_channels: int, hidden_size: int, dropout: float):
+        super(CustomSAGEConv, self).__init__()
+        self.hidden_size = hidden_size
+        self.dropout = dropout
+        self.in_channels = in_channels
+
+        self.conv1 = SAGEConv(self.in_channels, self.hidden_size)
+        self.conv2 = SAGEConv(self.hidden_size, self.hidden_size)
+        self.bn1 = nn.BatchNorm2d(self.hidden_size)
+        self.bn2 = nn.BatchNorm2d(self.hidden_size)
+        self.dropout = nn.Dropout(dropout)
+        self.relu = nn.ReLU()
+        self.elu = nn.ELU()
+
+    def forward(self, X, edge_index, edge_attr):
+        lst = []  # X [256bz 12node 11feature 64timestep]
+        X = X.permute(0, 3, 1, 2)  # X [256bz  64timestep 12node  11feature ]
+        skip = X.clone()
+        X = self.relu(self.conv1(X, edge_index, edge_attr))
+        X = X.permute(0, 3, 2, 1)
+        X = self.bn1(X)
+        X = X.permute(0, 3, 2, 1)
+        X = self.dropout(X)
+        lst.append(X)  # X.shape[16 64 12 64]
+
+        X = self.relu(self.conv2(X, edge_index, edge_attr))
         X = X.permute(0, 3, 2, 1)
         X = self.bn2(X)
         X = X.permute(0, 3, 2, 1)
@@ -131,17 +168,25 @@ class Multi_graph_trans(nn.Module):
         self.out_channels = out_channels
         self.batch_size = batch_size
         self.d_model = d_model
+        # self.geo_conv = CustomGraphConv(in_channels=self.in_channels, hidden_size=self.hidden_size,
+        #                                 dropout=self.dropout)
+        # self.poi_conv = CustomGraphConv(in_channels=self.in_channels, hidden_size=self.hidden_size,
+        #                                 dropout=self.dropout)
+        # self.ST_conv = CustomGraphConv(in_channels=self.in_channels, hidden_size=self.hidden_size,
+        #                                dropout=self.dropout)
+
         self.geo_conv = CustomGraphConv(in_channels=self.in_channels, hidden_size=self.hidden_size,
-                                        dropout=self.dropout)
-        self.poi_conv = CustomGraphConv(in_channels=self.in_channels, hidden_size=self.hidden_size,
-                                        dropout=self.dropout)
-        self.ST_conv = CustomGraphConv(in_channels=self.in_channels, hidden_size=self.hidden_size,
                                        dropout=self.dropout)
+        self.poi_conv = CustomGraphConv(in_channels=self.in_channels, hidden_size=self.hidden_size,
+                                       dropout=self.dropout)
+        self.ST_conv = CustomGraphConv(in_channels=self.in_channels, hidden_size=self.hidden_size,
+                                      dropout=self.dropout)
 
         self.geo_trans = Graph_transformer(hidden_size=self.hidden_size, d_model=d_model, num_nodes=self.num_nodes,
                                            feature_dim=feature_dim, label_len=label_len, pred_len=self.pred_len,
                                            window=self.window, num_layers=num_layers, dropout=self.dropout,
                                            dec_seq_len=dec_seq_len, batch_size=self.batch_size)
+
         self.poi_trans = Graph_transformer(hidden_size=self.hidden_size, d_model=d_model, num_nodes=self.num_nodes,
                                            feature_dim=feature_dim, label_len=label_len, pred_len=self.pred_len,
                                            window=self.window, num_layers=num_layers, dropout=self.dropout,
