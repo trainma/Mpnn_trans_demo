@@ -53,7 +53,7 @@ class CustomGraphConv(nn.Module):
 
 
 class Graph_transformer(nn.Module):
-    def __init__(self, hidden_size: int, d_model: int, feature_dim: int, label_len: int
+    def __init__(self, hidden_size: int, d_model: int, feature_dim: int, label_len: int, pred_len: int
                  , num_nodes: int, window: int, num_layers, dropout: float, dec_seq_len, batch_size):
         super(Graph_transformer, self).__init__()
         self.window = window
@@ -66,6 +66,7 @@ class Graph_transformer(nn.Module):
         self.src_mask = None
         self.d_model = d_model
         self.maX_len = 100
+        self.pred_len = pred_len
 
         self.local = context_embedding(self.d_model, self.d_model, 1)
         self.pos_encoder = PositionalEncoding(self.d_model)
@@ -112,16 +113,16 @@ class Graph_transformer(nn.Module):
         # transformer_out = self.tmp_out(X)
         # transformer_out = transformer_out[:, -1, :, :]
         # transformer_out = self.tmp_out(X)
-        transformer_out = X[:, :8, :, :]
+        transformer_out = X[:, :self.pred_len, :, :]
         return transformer_out
 
 
 class Multi_graph_trans(nn.Module):
     def __init__(self, in_channels: int, hidden_size: int, out_channels: int, d_model: int, feature_dim: int,
-                 label_len: int
-                 , num_nodes: int, window: int, num_layers, dropout: float, dec_seq_len, batch_size):
+                 label_len: int, pred_len: int,
+                 num_nodes: int, window: int, num_layers, dropout: float, dec_seq_len, batch_size):
         super(Multi_graph_trans, self).__init__()
-
+        self.pred_len = pred_len
         self.window = window
         self.num_nodes = num_nodes
         self.hidden_size = hidden_size
@@ -138,15 +139,15 @@ class Multi_graph_trans(nn.Module):
                                        dropout=self.dropout)
 
         self.geo_trans = Graph_transformer(hidden_size=self.hidden_size, d_model=d_model, num_nodes=self.num_nodes,
-                                           feature_dim=feature_dim, label_len=label_len,
+                                           feature_dim=feature_dim, label_len=label_len, pred_len=self.pred_len,
                                            window=self.window, num_layers=num_layers, dropout=self.dropout,
                                            dec_seq_len=dec_seq_len, batch_size=self.batch_size)
         self.poi_trans = Graph_transformer(hidden_size=self.hidden_size, d_model=d_model, num_nodes=self.num_nodes,
-                                           feature_dim=feature_dim, label_len=label_len,
+                                           feature_dim=feature_dim, label_len=label_len, pred_len=self.pred_len,
                                            window=self.window, num_layers=num_layers, dropout=self.dropout,
                                            dec_seq_len=dec_seq_len, batch_size=self.batch_size)
         self.ST_trans = Graph_transformer(hidden_size=self.hidden_size, d_model=d_model, num_nodes=self.num_nodes,
-                                          feature_dim=feature_dim, label_len=label_len,
+                                          feature_dim=feature_dim, label_len=label_len, pred_len=self.pred_len,
                                           window=self.window, num_layers=num_layers, dropout=self.dropout,
                                           dec_seq_len=dec_seq_len, batch_size=self.batch_size)
         self.linear = nn.Linear(self.d_model * 3, 1)
