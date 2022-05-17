@@ -31,13 +31,31 @@ def MSPE(pred, true):
     return np.mean(np.square((pred - true) / true))
 
 
-def metric(pred, true):
-    mae = MAE(pred, true)
-    mse = MSE(pred, true)
-    rmse = RMSE(pred, true)
-    mape = MAPE(pred, true)
-    mspe = MSPE(pred, true)
+def MSPE(pred, true):
+    return np.mean(np.square((pred - true) / true))
 
+
+def R2(pred, true):
+    SST = np.sum(np.power((true - np.mean(true)), 2))
+    SSReg = np.sum(np.power((pred - np.mean(true)), 2))
+    return SSReg / SST
+
+
+def cal_metric(pred, true, method):
+    temp = 0
+    for i in range(pred.shape[1]):
+        temp += method(pred[:, i], true[:, i])
+    temp /= pred.shape[1]
+    return temp
+
+
+def metric(pred, true):
+    mae = cal_metric(pred, true, MAE)
+    mse = cal_metric(pred, true, MSE)
+    rmse = cal_metric(pred, true, RMSE)
+    mape = cal_metric(pred, true, MAPE)
+    mspe = cal_metric(pred, true, MSPE)
+    r2 = cal_metric(pred, true, R2)
     return mae, mse, rmse, mape, mspe
 
 
