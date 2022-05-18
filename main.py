@@ -2,23 +2,17 @@
 import argparse
 import datetime
 import os
-import time
 
+import pandas as pd
 import torch
-import torch.optim as optim
 from torch.utils.tensorboard import SummaryWriter
-from tqdm import tqdm
 
+from Exp import Exp
 from dataset.Airquality_dataset import AirDatasetLoader
 from dataset.custom_dataloader import CreateDataloader
 from dataset.temporal_split import temporal_signal_split_valid
-from model.Multi_graph_trans import Multi_graph_trans
 from utils.log import Log
-from utils.metrics import metric
-from utils.tools import EarlyStopping
-from utils.tools import adjust_learning_rate
-from Exp import Exp
-
+from dataset.baseline_dataset import BaseLineDatasetLoader
 #
 now = datetime.datetime.now()
 date_now = str(now)[:-7]
@@ -103,6 +97,8 @@ def get_edge_index_attr():
 
 if __name__ == "__main__":
     loader = AirDatasetLoader()
+    loader2 = BaseLineDatasetLoader()
+    loader2.get_loader()
     dataset, _, label_scaler, poi_graph, ST_graph \
         = loader.get_dataset(num_timesteps_in=args.window, num_timesteps_out=args.pred_len)
     print("Dataset type:  ", dataset)
@@ -112,6 +108,8 @@ if __name__ == "__main__":
     train_loader, valid_loader, test_loader = CreateDataloader(train_dataset, valid_dataset, test_dataset, DEVICE=device
                                                                , batch_size=args.batch_size,
                                                                num_workers=args.num_workers)
+    baseline_dataset = pd.read_csv('data/Airquality/Aggr_PM2.5.csv')
+
     os.chdir('../')
     os.chdir('../')
     print("Number of train_samples: ", len(set(train_dataset)))

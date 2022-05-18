@@ -1,18 +1,13 @@
+import json
 import os
-import sys
+
 import numpy as np
-import torch
-from torch_geometric.utils import dense_to_sparse
 import pandas as pd
+import torch
+from sklearn.preprocessing import StandardScaler
 # from utils.log import Log
 from torch_geometric.data import Data
-from torch_geometric_temporal.nn.recurrent import MPNNLSTM
-from torch_geometric_temporal.dataset import ChickenpoxDatasetLoader
-from torch_geometric_temporal.signal import temporal_signal_split
 from torch_geometric_temporal import StaticGraphTemporalSignal
-import json
-from sklearn.preprocessing import StandardScaler, MinMaxScaler
-from dataset.temporal_split import temporal_signal_split_valid
 
 
 # from temporal_split import temporal_signal_split_valid
@@ -81,7 +76,8 @@ class AirDatasetLoader(object):
         normalize_data = self.data_scaler.transform(raw_data)
         normalize_label = self.label_scaler.transform(label_data)
         data = np.zeros(
-            (12, normalize_data.shape[0],feature_dim))  # [nodes,all_time_stamps,features] -> [nodes,features,all_time_stamps]
+            (12, normalize_data.shape[0],
+             feature_dim))  # [nodes,all_time_stamps,features] -> [nodes,features,all_time_stamps]
         label_data = raw_data[:, 0::feature_dim]
         for i in range(data.shape[0]):
             if i == 0:
@@ -146,8 +142,8 @@ class AirDatasetLoader(object):
             self.edges, self.edge_weights, self.features, self.targets
         )
 
-        return dataset, self.data_scaler, self.label_scaler,\
-               self.poi_graph,self.ST_graph
+        return dataset, self.data_scaler, self.label_scaler, \
+               self.poi_graph, self.ST_graph
 
 
 class AirDatasetLoader2(object):
