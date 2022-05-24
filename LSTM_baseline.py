@@ -7,11 +7,11 @@ Implementing the LSTM baseline method in Keras and Tensorflow with custom datase
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import tensorflow as tf
 from keras.callbacks import ModelCheckpoint
+from keras.layers import LSTM
 from sklearn.preprocessing import MinMaxScaler
-from tcn.tcn import TCN
 from tensorflow import keras
+from tqdm import tqdm
 
 import utils.metrics as metrics
 from utils import visualization as vz
@@ -142,25 +142,21 @@ if __name__ == '__main__':
     window_size = 72  # ths size of window
     batch_size = 32
     epochs = 100
-    filter_nums = 64
+    neuron_nums = 64
     kernel_size = 4
     pred_len = 2
+    dropout = 0.2
+
     df = pd.read_csv('./new.csv')
     df = df.drop(['Unnamed: 0', 'Time'], axis=1)
     feature_size = df.shape[1]
     Savepath = './new'
-    train_X, train_label, test_X, test_label, scaler = get_dataset_multi_step(df, 30000, 0.9,
+    train_X, train_label, test_X, test_label, scaler = get_dataset_multi_step(df, 35000, 0.9,
                                                                               window_size=window_size,
                                                                               n_out=pred_len)
 
-    inputs = keras.layers.Input(shape=(window_size, feature_size))
     model = keras.models.Sequential([
-        keras.layers.Input(shape=(window_size, feature_size)),
-        TCN(nb_filters=32,  # 滤波器的个数，类比于units
-            kernel_size=2,  # 卷积核的大小
-            dilations=[1, 2, 4, 8, 16],
-            ),  # 空洞因子
-
+        LSTM(neuron_nums, input_shape=(window_size, feature_size), dropout=dropout),
         keras.layers.Dense(units=feature_size * 2 * pred_len, activation='relu'),
         keras.layers.Dense(units=feature_size * pred_len),
         keras.layers.Reshape((pred_len, 12), )  # 输出的维度,输出维度乘积 = 输入维度的乘积
@@ -181,12 +177,15 @@ if __name__ == '__main__':
     vz.plot_history(history=history, figsize=(20, 10))
     evaluate_res = model.evaluate(test_X, test_label)
     prediction = model.predict(test_X)
-    scaled_prediction = scaler.inverse_transform(prediction)
-    scaled_test_label = scaler.inverse_transform(test_label)
-
-    metric = metric(scaled_prediction, scaled_test_label)
-    mae, mse, rmse, mape, mspe = metrics.metric(scaled_prediction, scaled_test_label)
-    print(metric.RMSE())
-    print(mae, mse, rmse)
-    metric.plot()
-    print(metric.MAE(), metric.RMSE(), metric.R2())
+    mae_list = []
+    rmse_list = []
+    for i in tqdm(range(prediction.shape[0])):
+        pred_temp = prediction[i, :, :]
+        real_temp = test_label[i, :, :]
+        inverse_pred = scaler.inverse_transform(pred_temp)
+        inverse_real = scaler.inverse_transform(real_temp)
+        mae, mse, rmse, mape, mspe = metrics.metric(inverse_pred, inverse_real)
+        mae_list.append(mae)
+        rmse_list.append(rmse)
+    print("Test MAE:", sum(mae_list) / len(mae_list))
+    print("Test RMSE:", sum(rmse_list) / len(rmse_list))

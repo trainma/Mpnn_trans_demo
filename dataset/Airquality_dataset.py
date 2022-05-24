@@ -28,7 +28,7 @@ class AirDatasetLoader(object):
         self.label_scaler = None
         self.raw_data = None
 
-    def _process_dataset(self):
+    def _process_dataset(self, Scope):
         os.chdir("Airquality")
 
         for file in os.listdir('./labels'):
@@ -68,7 +68,7 @@ class AirDatasetLoader(object):
             else:
                 df = pd.concat((df, self.meta_labs[i]), axis=1)
 
-        raw_data = df.values
+        raw_data = df.iloc[:Scope, :].values
         label_data = raw_data[:, 0::feature_dim]
 
         self.data_scaler = StandardScaler().fit(raw_data)
@@ -126,7 +126,7 @@ class AirDatasetLoader(object):
         # self.targets = target
 
     def get_dataset(
-            self, num_timesteps_in: int = 12, num_timesteps_out: int = 12
+            self, num_timesteps_in: int = 12, num_timesteps_out: int = 12, Scope: int = 30000
     ):
         """Returns data iterator for Beijing_air_quality dataset as an instance of the
         static graph temporal signal class.
@@ -135,7 +135,7 @@ class AirDatasetLoader(object):
             * **dataset** *(StaticGraphTemporalSignal)* - The Beijing_air_quality dataset
                 forecasting dataset.
         """
-        self._process_dataset()
+        self._process_dataset(Scope)
         self._get_edges_and_weights()
         self._generate_task(num_timesteps_in, num_timesteps_out)
         dataset = StaticGraphTemporalSignal(

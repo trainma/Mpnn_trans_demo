@@ -1,20 +1,18 @@
-import argparse
 import datetime
 import os
 import time
-from torch.utils.tensorboard import SummaryWriter
 
 import torch
 import torch.optim as optim
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
-from model.Multi_graph_trans import Multi_graph_trans
+
 from model.A3TGCN2 import TemporalGNN
-import torch.optim as optim
-from utils.tools import EarlyStopping
-from utils.tools import adjust_learning_rate
+from model.Multi_graph_trans import Multi_graph_trans
 from utils.log import Log
 from utils.metrics import metric
+from utils.tools import EarlyStopping
+from utils.tools import adjust_learning_rate
 
 now = datetime.datetime.now()
 date_now = str(now)[:-7]
@@ -194,8 +192,37 @@ class Exp():
         self.early_stopping(vali_loss, self.model, path=self.path)
         adjust_learning_rate(self.optimizer, epoch + 1, self.args)
 
-    def _test(self):
-        pass
+    def _test(self, epoch, Test_loader):
+        self.model.eval()
+        total_loss = []
+        mae_l, mse_l, rmse_l, mape_l, mspe_l = [], [], [], [], []
+        for batch, (X, y) in enumerate(Test_loader):
+            y_hat = self.model(X, self.geograph_edge_index, self.geograph_edge_attr, self.poi_graph_edge_index,
+                               self.poi_graph_edge_attr,
+                               self.ST_graph_edge_index, self.ST_graph_edge_attr)
+            val_loss = self.loss_fn(y_hat.squeeze(-1), y.transpose(1, 2))
+
+            real = y.detach().cpu().numpy()
+            # real = real.transpose(0, 2, 1)
+            # real_data = label_scaler.inverse_transform(real.squeeze(2))
+            real_data = self.label_scaler.inverse_transform(real.reshape(-1, 12))
+            pred = y_hat.squeeze(-1).detach().cpu().numpy()
+            # pred = np.expand_dims(pred, 1)
+            pred_data = self.label_scaler.inverse_transform(pred.reshape(-1, 12))
+            val_mae, val_mse, val_rmse, val_mape, val_mspe = metric(pred_data, real_data)
+            mae_l.append(val_mae)
+            mse_l.append(val_mse)
+            rmse_l.append(val_rmse)
+            mape_l.append(val_mape)
+            mspe_l.append(val_mspe)
+            total_loss.append(val_loss.detach().cpu().item())
+        print("Epoch {}: Test MSE loss {:.4f}".format(epoch + 1, sum(total_loss) / len(total_loss)))
+        logger.info("Epoch {}: Test MSE loss {:.4f}".format(epoch + 1, sum(total_loss) / len(total_loss)))
+        metric_val = "Epoch {}: test_mae {:.4f} test_mse {:.4f} test_rmse {:.4f} test_mape {:.4f} test_mspe {:.4f}".format(
+            epoch + 1, sum(mae_l) / len(mae_l), sum(mse_l) / len(mse_l), sum(rmse_l) / len(rmse_l),
+            sum(mape_l) / len(mape_l), sum(mspe_l) / len(mspe_l))
+        print(metric_val)
+        logger.info(metric_val)
 
     def __call__(self):
         self._build_model()
@@ -203,8 +230,8 @@ class Exp():
             start = time.time()
             self._train(epoch, self.train_loader)
             self._valid(epoch, self.valid_loader)
+            self._test(epoch, self.test_loader)
             end = time.time()
-
             best_model_path = self.path + '/' + 'checkpoint.pth'
         self.model.load_state_dict(torch.load(best_model_path))
         print("have save best model : {}".format(best_model_path))

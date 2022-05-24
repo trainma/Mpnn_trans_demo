@@ -95,7 +95,7 @@ if __name__ == '__main__':
     model.eval()
     pred_data_list = []
     real_data_list = []
-    for batch, (X, y) in enumerate(valid_loader):
+    for batch, (X, y) in enumerate(test_loader):
         y_hat = model(X, geograph_edge_index, geograph_edge_attr, poi_graph_edge_index, poi_graph_edge_attr,
                       ST_graph_edge_index, ST_graph_edge_attr)
         val_loss = loss_fn(y_hat.squeeze(2), y.squeeze(2))

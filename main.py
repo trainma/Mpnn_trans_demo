@@ -26,7 +26,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--epochs', type=int, default=100, help='Number of epochs to train.')
 parser.add_argument('--lr', type=float, default=1e-3, help='Initial learning rate.')
 parser.add_argument('--hidden', type=int, default=72, help='Number of hidden units.')
-parser.add_argument('--batch-size', type=int, default=64, help='Size of batch.')
+parser.add_argument('--batch-size', type=int, default=16, help='Size of batch.')
 parser.add_argument('--dropout', type=float, default=0.3, help='Dropout rate.')
 parser.add_argument('--num_layers', type=int, default=1, help='The num of Transformer Decoder layer')
 parser.add_argument('--window', type=int, default=72, help='Size of window for features.')
@@ -38,7 +38,7 @@ parser.add_argument('--num_nodes', type=int, default=12, help='the num node of g
 parser.add_argument('--node_features', type=int, default=9, help='the features of every node in graph')
 parser.add_argument('--checkpoints', type=str, default='./res/', help='location of model checkpoints')
 parser.add_argument('--lradj', type=str, default='type3', help='adjust learning rate')
-parser.add_argument('--model', type=str, default='A3TGCN', help='choose what model to train')
+parser.add_argument('--model', type=str, default='MPNN_trans', help='choose what model to train')
 parser.add_argument('--d_model', type=int, default=256, help='the d_model of the transformer')
 parser.add_argument('--label_len', type=int, default=48)
 parser.add_argument('--enc_layers', type=int, default=1, help='the number of enc layers in trans')
@@ -97,8 +97,6 @@ def get_edge_index_attr():
 
 if __name__ == "__main__":
     loader = AirDatasetLoader()
-    loader2 = BaseLineDatasetLoader()
-    loader2.get_loader()
     dataset, _, label_scaler, poi_graph, ST_graph \
         = loader.get_dataset(num_timesteps_in=args.window, num_timesteps_out=args.pred_len)
     print("Dataset type:  ", dataset)
@@ -108,7 +106,6 @@ if __name__ == "__main__":
     train_loader, valid_loader, test_loader = CreateDataloader(train_dataset, valid_dataset, test_dataset, DEVICE=device
                                                                , batch_size=args.batch_size,
                                                                num_workers=args.num_workers)
-    baseline_dataset = pd.read_csv('data/Airquality/Aggr_PM2.5.csv')
 
     os.chdir('../')
     os.chdir('../')

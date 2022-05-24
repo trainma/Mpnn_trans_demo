@@ -116,7 +116,7 @@ if __name__ == '__main__':
     epochs = 100
     filter_nums = 64
     kernel_size = 4
-    pred_len = 24
+    pred_len = 16
     df = pd.read_csv('./new.csv')
     df = df.drop(['Unnamed: 0', 'Time'], axis=1)
     feature_size = df.shape[1]
